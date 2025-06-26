@@ -11,17 +11,10 @@
   "kdaMultiplier": 20, // KDA multiplier
 
   // CS (Creep Score) per minute multiplier
-  "csPerMinMultiplier": 5, // CS per minute multiplier
+  "csPerMinMultiplier": 12, // CS per minute multiplier
 
-  // Vision score multipliers
-  "visionScoreMultiplier": 1, // vision score multiplier (default)
-  "supportVisionScoreMultiplier": 2, // vision score multiplier (support/utility)
-
-  // Assist multiplier for supports
-  "supportAssistMultiplier": 2, // assist multiplier (support/utility)
-
-  // Effective healing/shielding for supports
-  "supportHealShieldDivider": 100, // heal/shield divider (support/utility)
+  // Vision score multiplier (default, for non-supports)
+  "visionScoreMultiplier": 5, // vision score multiplier (default)
 
   // Damage dealt to champions divider
   "damageDealtDivider": 100, // damage dealt divider
@@ -44,7 +37,7 @@
   "firstTowerKill": 20, // first tower kill bonus
 
   // Death penalty
-  "deathPenalty": 5, // death penalty
+  "deathPenalty": 100, // death penalty
 
   // MVP-like stats bonuses
   "killingSpreesBonus": 30, // killing sprees bonus
@@ -58,8 +51,8 @@
 
   // Role-specific multipliers
   "support": {
-    "visionScoreMultiplier": 2,
-    "assistMultiplier": 2,
+    "visionScoreMultiplier": 2.4,
+    "assistMultiplier": 5,
     "healShieldDivider": 80
   },
   "jungler": {
@@ -68,11 +61,16 @@
     "epicMonsterTakedownMultiplier": 15
   },
   "carry": {
-    "csPerMinMultiplier": 7,
-    "damageDealtDivider": 80,
-    "killParticipationMultiplier": 2
+    "csPerMinMultiplier": 10,
+    "damageDealtDivider": 80
   },
 
+  // Kill participation multiplier (applies to all roles)
+  "killParticipationMultiplier": 2,
+
   // ELO K-factor (main ELO volatility/weight)
-  "kFactor": 256 // ELO K-factor (default 64)
+  "kFactor": 256, // ELO K-factor (default 64)
+
+  // Gold efficiency bonus (gold spent / gold earned ratio * multiplier)
+  "goldEfficiencyMultiplier": 10 // gold efficiency bonus multiplier
 }

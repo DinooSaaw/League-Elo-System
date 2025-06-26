@@ -88,6 +88,7 @@ function saveUserStats(gameId, participants) {
     stats.avgKills = stats.totalKills / stats.games;
     stats.avgAssists = stats.totalAssists / stats.games;
     stats.avgDeaths = stats.totalDeaths / stats.games;
+    stats.avgGold = stats.totalGold / stats.games;
     stats.winLoss = `${stats.totalWins}:${stats.totalLosses}`;
 
     fs.writeFileSync(filePath, JSON.stringify(stats, null, 2));
@@ -99,78 +100,90 @@ function saveUserStats(gameId, participants) {
     const sign = diff > 0 ? '+' : '';
     console.log(`${name} ELO changed: ${oldElo} -> ${newElo} (${colorStart}${sign}${diff}${colorEnd})`);
 
-    // Append to log file
-    fs.appendFileSync('elo-log.txt', `${Date.now()},${name},${oldElo},${newElo}\n`);
+    // Append to log file with formatted date
+    const now = new Date();
+    let hours = now.getHours();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    if (hours === 0) hours = 12;
+    const formatted = `${now.getFullYear().toString().slice(2)}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${hours}-${String(now.getMinutes()).padStart(2,'0')}-${ampm}`;
+    fs.appendFileSync('elo-log.txt', `${formatted},${name},${oldElo},${newElo}\n`);
   }
 }
 
 // Utility: Get participant role
 function getRole(participant) {
-  // Prefer explicit 'role', then 'individualPosition', then 'teamPosition'
-  return (
-    (participant.role && participant.role.toUpperCase()) ||
-    (participant.individualPosition && participant.individualPosition.toUpperCase()) ||
-    (participant.teamPosition && participant.teamPosition.toUpperCase()) ||
-    'UNKNOWN'
-  );
+  // Use teamPosition if available, fallback to 'UNKNOWN'
+  return (participant.teamPosition && participant.teamPosition.toUpperCase()) || 'UNKNOWN';
 }
 
 // Calculate extra ELO for new metrics
 function calculateExtraElo(participant, config) {
-  let bonus = 0;
-  const timeMinutes = (participant.timePlayed || 1) / 60;
   const role = getRole(participant);
+  let bonus = 0;
+
+  // Normalize by game length (minutes)
+  const timeMinutes = (participant.timePlayed || 1) / 60;
 
   // Damage taken/mitigated (normalized)
   const damageTaken = participant.totalDamageTaken || 0;
   const damageMitigated = participant.damageSelfMitigated || 0;
   if (config.damageTakenMitigatedDivider) {
-    bonus += ((damageTaken + damageMitigated) / (config.damageTakenMitigatedDivider * timeMinutes));
+    bonus += ((damageTaken + damageMitigated) / timeMinutes) / config.damageTakenMitigatedDivider;
   }
 
   // Role-specific
   if (role === 'UTILITY' || role === 'SUPPORT') {
-    // Vision
+    // Vision (normalized)
     if (config.support && config.support.visionScoreMultiplier && participant.visionScore) {
-      bonus += participant.visionScore * config.support.visionScoreMultiplier;
+      bonus += (participant.visionScore / timeMinutes) * config.support.visionScoreMultiplier;
     }
-    // Assists
+    // Assists (normalized)
     if (config.support && config.support.assistMultiplier && participant.assists) {
-      bonus += participant.assists * config.support.assistMultiplier;
+      bonus += (participant.assists / timeMinutes) * config.support.assistMultiplier;
     }
-    // Healing/shielding
+    // Healing/shielding (normalized)
     const healShield = (participant.challenges && participant.challenges.effectiveHealAndShielding) || participant.effectiveHealAndShielding || 0;
     if (healShield && config.support && config.support.healShieldDivider) {
-      bonus += healShield / config.support.healShieldDivider;
+      bonus += (healShield / timeMinutes) / config.support.healShieldDivider;
     }
   } else if (role === 'JUNGLE' || role === 'JUNGLER') {
-    // Jungle CS before 10 min
+    // Jungle CS before 10 min (already normalized by definition)
     const jungleCS10 = (participant.challenges && participant.challenges.jungleCsBefore10Minutes) || participant.jungleCsBefore10Minutes || 0;
     if (jungleCS10 && config.jungler && config.jungler.jungleCsBefore10MinMultiplier) {
       bonus += jungleCS10 * config.jungler.jungleCsBefore10MinMultiplier;
     }
-    // Neutral minions
+    // Neutral minions (normalized)
     if (config.jungler && config.jungler.neutralMinionsKilledMultiplier && participant.neutralMinionsKilled) {
-      bonus += participant.neutralMinionsKilled * config.jungler.neutralMinionsKilledMultiplier;
+      bonus += (participant.neutralMinionsKilled / timeMinutes) * config.jungler.neutralMinionsKilledMultiplier;
     }
-    // Epic monster takedowns
+    // Epic monster takedowns (normalized)
     const epicTakedowns = (participant.challenges && participant.challenges.junglerTakedownsNearDamagedEpicMonster) || participant.junglerTakedownsNearDamagedEpicMonster || 0;
     if (epicTakedowns && config.jungler && config.jungler.epicMonsterTakedownMultiplier) {
-      bonus += epicTakedowns * config.jungler.epicMonsterTakedownMultiplier;
+      bonus += (epicTakedowns / timeMinutes) * config.jungler.epicMonsterTakedownMultiplier;
     }
   } else if (role === 'BOTTOM' || role === 'CARRY' || role === 'DUO_CARRY') {
-    // CS/min
+    // CS/min (already normalized)
     if (config.carry && config.carry.csPerMinMultiplier && participant.totalMinionsKilled && timeMinutes > 0) {
       bonus += (participant.totalMinionsKilled / timeMinutes) * config.carry.csPerMinMultiplier;
     }
-    // Damage dealt
+    // Damage dealt (normalized)
     if (config.carry && config.carry.damageDealtDivider && participant.totalDamageDealtToChampions) {
-      bonus += participant.totalDamageDealtToChampions / config.carry.damageDealtDivider;
+      bonus += (participant.totalDamageDealtToChampions / timeMinutes) / config.carry.damageDealtDivider;
     }
-    // Kill participation
-    const kp = (participant.challenges && participant.challenges.killParticipation) || participant.killParticipation || 0;
-    if (kp && config.carry && config.carry.killParticipationMultiplier) {
-      bonus += kp * 100 * config.carry.killParticipationMultiplier; // scale to percent
+  }
+
+  // Kill participation (normalized)
+  const kp = (participant.challenges && participant.challenges.killParticipation) || participant.killParticipation || 0;
+  if (kp && config.killParticipationMultiplier) {
+    bonus += kp * 100 * config.killParticipationMultiplier; // already a percent, not normalized by time
+  }
+
+  // Gold efficiency bonus (normalized)
+  if (config.goldEfficiencyMultiplier && participant.goldEarned && participant.goldSpent) {
+    const efficiency = participant.goldSpent / participant.goldEarned;
+    if (efficiency > 0 && efficiency <= 1.05) {
+      bonus += (efficiency / timeMinutes) * config.goldEfficiencyMultiplier;
     }
   }
 
