@@ -104,8 +104,85 @@ function saveUserStats(gameId, participants) {
   }
 }
 
+// Utility: Get participant role
+function getRole(participant) {
+  // Prefer explicit 'role', then 'individualPosition', then 'teamPosition'
+  return (
+    (participant.role && participant.role.toUpperCase()) ||
+    (participant.individualPosition && participant.individualPosition.toUpperCase()) ||
+    (participant.teamPosition && participant.teamPosition.toUpperCase()) ||
+    'UNKNOWN'
+  );
+}
 
-// True ELO calculation based on teams and match result
+// Calculate extra ELO for new metrics
+function calculateExtraElo(participant, config) {
+  let bonus = 0;
+  const timeMinutes = (participant.timePlayed || 1) / 60;
+  const role = getRole(participant);
+
+  // Damage taken/mitigated (normalized)
+  const damageTaken = participant.totalDamageTaken || 0;
+  const damageMitigated = participant.damageSelfMitigated || 0;
+  if (config.damageTakenMitigatedDivider) {
+    bonus += ((damageTaken + damageMitigated) / (config.damageTakenMitigatedDivider * timeMinutes));
+  }
+
+  // Role-specific
+  if (role === 'UTILITY' || role === 'SUPPORT') {
+    // Vision
+    if (config.support && config.support.visionScoreMultiplier && participant.visionScore) {
+      bonus += participant.visionScore * config.support.visionScoreMultiplier;
+    }
+    // Assists
+    if (config.support && config.support.assistMultiplier && participant.assists) {
+      bonus += participant.assists * config.support.assistMultiplier;
+    }
+    // Healing/shielding
+    const healShield = (participant.challenges && participant.challenges.effectiveHealAndShielding) || participant.effectiveHealAndShielding || 0;
+    if (healShield && config.support && config.support.healShieldDivider) {
+      bonus += healShield / config.support.healShieldDivider;
+    }
+  } else if (role === 'JUNGLE' || role === 'JUNGLER') {
+    // Jungle CS before 10 min
+    const jungleCS10 = (participant.challenges && participant.challenges.jungleCsBefore10Minutes) || participant.jungleCsBefore10Minutes || 0;
+    if (jungleCS10 && config.jungler && config.jungler.jungleCsBefore10MinMultiplier) {
+      bonus += jungleCS10 * config.jungler.jungleCsBefore10MinMultiplier;
+    }
+    // Neutral minions
+    if (config.jungler && config.jungler.neutralMinionsKilledMultiplier && participant.neutralMinionsKilled) {
+      bonus += participant.neutralMinionsKilled * config.jungler.neutralMinionsKilledMultiplier;
+    }
+    // Epic monster takedowns
+    const epicTakedowns = (participant.challenges && participant.challenges.junglerTakedownsNearDamagedEpicMonster) || participant.junglerTakedownsNearDamagedEpicMonster || 0;
+    if (epicTakedowns && config.jungler && config.jungler.epicMonsterTakedownMultiplier) {
+      bonus += epicTakedowns * config.jungler.epicMonsterTakedownMultiplier;
+    }
+  } else if (role === 'BOTTOM' || role === 'CARRY' || role === 'DUO_CARRY') {
+    // CS/min
+    if (config.carry && config.carry.csPerMinMultiplier && participant.totalMinionsKilled && timeMinutes > 0) {
+      bonus += (participant.totalMinionsKilled / timeMinutes) * config.carry.csPerMinMultiplier;
+    }
+    // Damage dealt
+    if (config.carry && config.carry.damageDealtDivider && participant.totalDamageDealtToChampions) {
+      bonus += participant.totalDamageDealtToChampions / config.carry.damageDealtDivider;
+    }
+    // Kill participation
+    const kp = (participant.challenges && participant.challenges.killParticipation) || participant.killParticipation || 0;
+    if (kp && config.carry && config.carry.killParticipationMultiplier) {
+      bonus += kp * 100 * config.carry.killParticipationMultiplier; // scale to percent
+    }
+  }
+
+  // Loss penalty
+  if (config.lossPenalty && participant.win === false) {
+    bonus -= config.lossPenalty;
+  }
+
+  return bonus;
+}
+
+// True ELO calculation based on teams and match result, with extra metrics
 function calculateTrueElo(participants) {
   // Load current ELO for each participant
   participants.forEach(p => {
@@ -139,13 +216,15 @@ function calculateTrueElo(participants) {
 
   const k = config.kFactor || 64;
 
-  // Update each player's ELO
+  // Update each player's ELO, add extra metrics
   team1.forEach(p => {
-    p.elo = Math.max(0, Math.round(p.elo + k * (actual1 - expected1)));
+    let baseElo = Math.max(0, Math.round(p.elo + k * (actual1 - expected1)));
+    p.elo = Math.max(0, Math.round(baseElo + calculateExtraElo(p, config)));
   });
 
   team2.forEach(p => {
-    p.elo = Math.max(0, Math.round(p.elo + k * (actual2 - expected2)));
+    let baseElo = Math.max(0, Math.round(p.elo + k * (actual2 - expected2)));
+    p.elo = Math.max(0, Math.round(baseElo + calculateExtraElo(p, config)));
   });
 
   return participants;

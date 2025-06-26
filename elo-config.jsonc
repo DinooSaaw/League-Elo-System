@@ -25,6 +25,9 @@
   // Damage dealt to champions divider
   "damageDealtDivider": 100, // damage dealt divider
 
+  // Damage taken/mitigated divider
+  "damageTakenMitigatedDivider": 150, // damage taken+mitigated divider (normalized)
+
   // Objective participation
   "turretTakedownMultiplier": 10, // turret takedown multiplier
   "dragonKillMultiplier": 20, // dragon kill multiplier
@@ -47,5 +50,25 @@
   "doubleKillBonus": 5, // double kill bonus
   "tripleKillBonus": 10, // triple kill bonus
   "quadraKillBonus": 20, // quadra kill bonus
-  "pentaKillBonus": 50 // penta kill bonus
+  "pentaKillBonus": 50, // penta kill bonus
+
+  // Penalty for losing
+  "lossPenalty": 50, // penalty for losing
+
+  // Role-specific multipliers
+  "support": {
+    "visionScoreMultiplier": 2,
+    "assistMultiplier": 2,
+    "healShieldDivider": 80
+  },
+  "jungler": {
+    "jungleCsBefore10MinMultiplier": 3,
+    "neutralMinionsKilledMultiplier": 2,
+    "epicMonsterTakedownMultiplier": 15
+  },
+  "carry": {
+    "csPerMinMultiplier": 7,
+    "damageDealtDivider": 80,
+    "killParticipationMultiplier": 2
+  }
 }
