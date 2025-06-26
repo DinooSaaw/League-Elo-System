@@ -1,5 +1,6 @@
 // ELO calculation config (JSONC: JSON with comments)
 {
+
   // Base ELO for every participant
   "baseElo": 1000,
 
@@ -70,5 +71,8 @@
     "csPerMinMultiplier": 7,
     "damageDealtDivider": 80,
     "killParticipationMultiplier": 2
-  }
+  },
+
+  // ELO K-factor (main ELO volatility/weight)
+  "kFactor": 256 // ELO K-factor (default 64)
 }
