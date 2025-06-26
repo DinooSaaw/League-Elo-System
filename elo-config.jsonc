@@ -1,0 +1,51 @@
+// ELO calculation config (JSONC: JSON with comments)
+{
+  // Base ELO for every participant
+  "baseElo": 1000,
+
+  // Win bonus
+  "winBonus": 100, // win bonus
+
+  // KDA multiplier (Kills + Assists) / Deaths
+  "kdaMultiplier": 20, // KDA multiplier
+
+  // CS (Creep Score) per minute multiplier
+  "csPerMinMultiplier": 5, // CS per minute multiplier
+
+  // Vision score multipliers
+  "visionScoreMultiplier": 1, // vision score multiplier (default)
+  "supportVisionScoreMultiplier": 2, // vision score multiplier (support/utility)
+
+  // Assist multiplier for supports
+  "supportAssistMultiplier": 2, // assist multiplier (support/utility)
+
+  // Effective healing/shielding for supports
+  "supportHealShieldDivider": 100, // heal/shield divider (support/utility)
+
+  // Damage dealt to champions divider
+  "damageDealtDivider": 100, // damage dealt divider
+
+  // Objective participation
+  "turretTakedownMultiplier": 10, // turret takedown multiplier
+  "dragonKillMultiplier": 20, // dragon kill multiplier
+  "baronKillMultiplier": 30, // baron kill multiplier
+
+  // Lane vision advantage
+  "visionScoreAdvantageLaneOpponent": 10, // vision score advantage over lane opponent
+
+  // First blood/objective bonuses
+  "firstBloodAssist": 15, // first blood assist bonus
+  "firstBloodKill": 25, // first blood kill bonus
+  "firstTowerAssist": 10, // first tower assist bonus
+  "firstTowerKill": 20, // first tower kill bonus
+
+  // Death penalty
+  "deathPenalty": 5, // death penalty
+
+  // MVP-like stats bonuses
+  "killingSpreesBonus": 30, // killing sprees bonus
+  "doubleKillBonus": 5, // double kill bonus
+  "tripleKillBonus": 10, // triple kill bonus
+  "quadraKillBonus": 20, // quadra kill bonus
+  "pentaKillBonus": 50 // penta kill bonus
+}
