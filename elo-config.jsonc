@@ -1,76 +1,75 @@
 // ELO calculation config (JSONC: JSON with comments)
 {
-
-  // Base ELO for every participant
+  // Base ELO for every new player
   "baseElo": 1000,
 
-  // Win bonus
-  "winBonus": 100, // win bonus
-
-  // KDA multiplier (Kills + Assists) / Deaths
-  "kdaMultiplier": 20, // KDA multiplier
-
-  // CS (Creep Score) per minute multiplier
-  "csPerMinMultiplier": 12, // CS per minute multiplier
-
-  // Vision score multiplier (default, for non-supports)
-  "visionScoreMultiplier": 5, // vision score multiplier (default)
-
-  // Damage dealt to champions divider
-  "damageDealtDivider": 100, // damage dealt divider
-
-  // Damage taken/mitigated divider
-  "damageTakenMitigatedDivider": 150, // damage taken+mitigated divider (normalized)
-
-  // Objective participation
-  "turretTakedownMultiplier": 10, // turret takedown multiplier
-  "dragonKillMultiplier": 20, // dragon kill multiplier
-  "baronKillMultiplier": 30, // baron kill multiplier
-
-  // Lane vision advantage
-  "visionScoreAdvantageLaneOpponent": 10, // vision score advantage over lane opponent
-
-  // First blood/objective bonuses
-  "firstBloodAssist": 15, // first blood assist bonus
-  "firstBloodKill": 25, // first blood kill bonus
-  "firstTowerAssist": 10, // first tower assist bonus
-  "firstTowerKill": 20, // first tower kill bonus
-
-  // Death penalty
-  "deathPenalty": 100, // death penalty
-
-  // MVP-like stats bonuses
-  "killingSpreesBonus": 30, // killing sprees bonus
-  "doubleKillBonus": 5, // double kill bonus
-  "tripleKillBonus": 10, // triple kill bonus
-  "quadraKillBonus": 20, // quadra kill bonus
-  "pentaKillBonus": 50, // penta kill bonus
-
-  // Penalty for losing
-  "lossPenalty": 50, // penalty for losing
-
-  // Role-specific multipliers
-  "support": {
-    "visionScoreMultiplier": 2.4,
-    "assistMultiplier": 5,
-    "healShieldDivider": 80
-  },
-  "jungler": {
-    "jungleCsBefore10MinMultiplier": 3,
-    "neutralMinionsKilledMultiplier": 2,
-    "epicMonsterTakedownMultiplier": 15
-  },
-  "carry": {
-    "csPerMinMultiplier": 10,
-    "damageDealtDivider": 80
+  // --- Hybrid ELO Calculation (Default) ---
+  "calculationMethods": {
+    "hybrid": {
+      "enabled": true, // Use Hybrid as the default method
+      "baseEloChange": 25,          // Base ELO change (+25 for win, -25 for loss)
+      "performanceMultiplier": 1.5, // Extra ELO for good/bad performance
+      "winBonusReduction": 0.4,     // Poor win: 25 * 0.4 = +10 min
+      "lossPenaltyReduction": 0.4   // Good loss: 25 * 0.4 = -10 min
+    }
   },
 
-  // Kill participation multiplier (applies to all roles)
-  "killParticipationMultiplier": 2,
+  // --- Stat Weights for Performance ---
+  "performanceWeights": {
+    "kda": 0.25,        // Kills/Deaths/Assists
+    "damage": 0.20,    // Damage to champions
+    "vision": 0.15,    // Vision score
+    "objectives": 0.15,// Objective participation
+    "farm": 0.10,      // CS per minute
+    "survival": 0.10,  // Staying alive
+    "utility": 0.05    // Healing, shielding, CC
+  },
 
-  // ELO K-factor (main ELO volatility/weight)
-  "kFactor": 256, // ELO K-factor (default 64)
+  // --- Lane/Role Stat Priorities ---
+  "laneStatPriorities": {
+    "TOP":     { "damage": 0.3, "farm": 0.25, "survival": 0.2, "objectives": 0.15, "kda": 0.1 },
+    "JUNGLE":  { "objectives": 0.35, "kda": 0.25, "vision": 0.2, "farm": 0.15, "utility": 0.05 },
+    "MIDDLE":  { "damage": 0.35, "kda": 0.25, "farm": 0.2, "objectives": 0.15, "survival": 0.05 },
+    "BOTTOM":  { "damage": 0.4, "farm": 0.25, "kda": 0.2, "survival": 0.1, "objectives": 0.05 },
+    "UTILITY": { "vision": 0.35, "utility": 0.25, "kda": 0.2, "survival": 0.15, "objectives": 0.05 }
+  },
 
-  // Gold efficiency bonus (gold spent / gold earned ratio * multiplier)
-  "goldEfficiencyMultiplier": 10 // gold efficiency bonus multiplier
+  // --- Advanced Stat Multipliers ---
+  "advancedStats": {
+    "earlyGameWeight": 1.2,    // Early game impact
+    "lateGameWeight": 1.1,     // Late game impact
+    "objectiveControlWeight": 1.5, // Objective control
+    "teamFightWeight": 1.3,    // Team fight participation
+    "soloKillWeight": 1.4,     // Solo kills
+    "comebackWeight": 1.6      // Comeback performance
+  },
+
+  // --- Stat Bonuses (extra ELO for special achievements) ---
+  "statBonuses": {
+    "firstBloodKill": 15,
+    "firstBloodAssist": 8,
+    "firstTowerKill": 12,
+    "firstTowerAssist": 6,
+    "perfectKDA": 25,          // No deaths
+    "highKillParticipation": 20, // >70% KP
+    "excellentVision": 15,     // Top vision score
+    "objectiveStealer": 30,    // Steal baron/dragon
+    "pentaKill": 50,
+    "quadraKill": 25,
+    "tripleKill": 15,
+    "doubleKill": 8,
+    "soloKill": 10,
+    "clutchPlay": 20,          // Late game multi-kill
+    "earlyGameLead": 15,       // Strong early game
+    "comeback": 25             // Good play from behind
+  },
+
+  // --- Stat Penalties (ELO loss for poor play) ---
+  "statPenalties": {
+    "feedingPenalty": -15,     // Deaths > kills+assists
+    "lowParticipation": -20,   // <30% KP
+    "poorVision": -10,         // Low vision for role
+    "afkPenalty": -50,         // Very low activity
+    "griefingPenalty": -30     // Excessive deaths, no contribution
+  }
 }

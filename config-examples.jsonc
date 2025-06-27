@@ -1,0 +1,115 @@
+// Example configurations for different ELO calculation scenarios
+// Copy any of these into your elo-config.jsonc file
+
+// SCENARIO 1: Emphasis on lane performance (Top laners vs Top laners)
+// Good for highlighting individual skill within roles
+{
+  "calculationMethods": {
+    "traditional": { "enabled": false },
+    "laneComparison": { 
+      "enabled": true,
+      "laneWeight": 0.6,        // Heavy weight on lane performance
+      "teamWeight": 0.25,       // Moderate team weight
+      "individualWeight": 0.15, // Light individual weight
+      "maxLaneBonus": 100,
+      "maxTeamBonus": 50,
+      "maxIndividualBonus": 30
+    },
+    "hybrid": { "enabled": false }
+  }
+}
+
+// SCENARIO 2: Individual performance focus (Guaranteed win/loss with performance adjustment)
+// Wins ALWAYS give positive ELO, losses ALWAYS give negative ELO
+// But the amount depends on your performance
+{
+  "calculationMethods": {
+    "traditional": { "enabled": false },
+    "laneComparison": { "enabled": false },
+    "hybrid": { 
+      "enabled": true,
+      "baseEloChange": 25,          // Base: +25 for wins, -25 for losses
+      "performanceMultiplier": 1.5, // Performance impact multiplier
+      "winBonusReduction": 0.4,     // Poor performance win: 25 * 0.4 = +10 minimum
+      "lossPenaltyReduction": 0.4   // Good performance loss: 25 * 0.4 = -10 minimum
+    }
+  }
+}
+
+// SCENARIO 3: Balanced team + individual performance
+// Classic approach with modern individual stat consideration
+{
+  "calculationMethods": {
+    "traditional": { 
+      "enabled": true,
+      "performanceWeight": 0.3,     // 30% individual, 70% team
+      "teamResultWeight": 0.7,
+      "maxPerformanceBonus": 80,
+      "minPerformanceBonus": -60
+    },
+    "laneComparison": { "enabled": false },
+    "hybrid": { "enabled": false }
+  }
+}
+
+// SCENARIO 4: Comparison mode - See all methods at once
+{
+  "calculationMethods": {
+    "traditional": { "enabled": true },
+    "laneComparison": { "enabled": true },
+    "hybrid": { "enabled": true }
+  }
+}
+
+// SCENARIO 5: Ultra-competitive individual focus
+// Heavily rewards good individual play, punishes poor play
+{
+  "calculationMethods": {
+    "traditional": { "enabled": false },
+    "laneComparison": { "enabled": false },
+    "hybrid": { 
+      "enabled": true,
+      "baseEloChange": 25,
+      "performanceMultiplier": 3.0,  // High performance impact
+      "winBonusReduction": 0.2,      // Carried wins = very low ELO
+      "lossPenaltyReduction": 0.8    // Good performance losses = very low penalty
+    }
+  }
+}
+
+// SCENARIO 6: Role-specific mastery focus
+// Perfect for emphasizing role-specific skills
+{
+  "calculationMethods": {
+    "traditional": { "enabled": false },
+    "laneComparison": { 
+      "enabled": true,
+      "laneWeight": 0.7,        // Very heavy lane focus
+      "teamWeight": 0.2,        // Low team weight
+      "individualWeight": 0.1,  // Very low individual weight
+      "maxLaneBonus": 120,      // High lane bonuses
+      "maxTeamBonus": 40,
+      "maxIndividualBonus": 20
+    },
+    "hybrid": { "enabled": false }
+  },
+  
+  // Enhanced role priorities
+  "laneStatPriorities": {
+    "TOP": {
+      "damage": 0.4,      // Even more damage focused
+      "farm": 0.3,
+      "survival": 0.15,
+      "objectives": 0.1,
+      "kda": 0.05
+    },
+    "JUNGLE": {
+      "objectives": 0.5,   // Extremely objective focused
+      "kda": 0.2,
+      "vision": 0.15,
+      "farm": 0.1,
+      "utility": 0.05
+    }
+    // ... etc for other roles
+  }
+}
