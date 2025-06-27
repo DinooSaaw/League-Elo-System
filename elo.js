@@ -95,7 +95,7 @@ function saveUserStats(gameId, participants) {
 
     // Log ELO change with color in console
     const diff = newElo - oldElo;
-    const colorStart = diff > 0 ? '\x1b[32m' : diff < 0 ? '\x1b[31m' : '\x1b[37m';
+    const colorStart = diff > 0 ? '\x1b[32m' : diff < 0 ? '\x1b[31m' : '\x1b[37m'; // green for +, red for -
     const colorEnd = '\x1b[0m';
     const sign = diff > 0 ? '+' : '';
     console.log(`${name} ELO changed: ${oldElo} -> ${newElo} (${colorStart}${sign}${diff}${colorEnd})`);
@@ -197,6 +197,11 @@ function calculateExtraElo(participant, config) {
 
 // True ELO calculation based on teams and match result, with extra metrics
 function calculateTrueElo(participants) {
+  // Only run if hybrid method is enabled (safe check)
+  if (!config.calculationMethods || !config.calculationMethods.hybrid || !config.calculationMethods.hybrid.enabled) {
+    throw new Error('Hybrid calculation method must be enabled in config.');
+  }
+
   // Load current ELO for each participant
   participants.forEach(p => {
     p.elo = loadPlayerElo(p.summonerName);

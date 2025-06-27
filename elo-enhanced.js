@@ -203,8 +203,8 @@ function calculateLaneComparison(participants) {
 
 // Method 1: Traditional ELO with performance modifiers
 function calculateTraditionalElo(participants) {
-  const method = config.calculationMethods.traditional;
-  if (!method.enabled) return participants;
+  const method = config.calculationMethods && config.calculationMethods.traditional;
+  if (!method || !method.enabled) return participants;
   
   // Load current ELO for each participant
   participants.forEach(p => {
@@ -280,8 +280,8 @@ function calculateTraditionalElo(participants) {
 
 // Method 2: Lane-based comparison system
 function calculateLaneComparisonElo(participants) {
-  const method = config.calculationMethods.laneComparison;
-  if (!method.enabled) return participants;
+  const method = config.calculationMethods && config.calculationMethods.laneComparison;
+  if (!method || !method.enabled) return participants;
   
   calculateLaneComparison(participants);
   
@@ -313,8 +313,8 @@ function calculateLaneComparisonElo(participants) {
 
 // Method 3: Hybrid performance-based system
 function calculateHybridElo(participants) {
-  const method = config.calculationMethods.hybrid;
-  if (!method.enabled) return participants;
+  const method = config.calculationMethods && config.calculationMethods.hybrid;
+  if (!method || !method.enabled) return participants;
   
   participants.forEach(p => {
     const perfStats = calculatePerformanceStats(p);
@@ -401,15 +401,15 @@ function saveUserStats(gameId, participants) {
     let method = 'none';
     let eloChange = 0;
     
-    if (config.calculationMethods.traditional.enabled && participant.traditionalNewElo !== undefined) {
+    if (config.calculationMethods && config.calculationMethods.traditional && config.calculationMethods.traditional.enabled && participant.traditionalNewElo !== undefined) {
       newElo = participant.traditionalNewElo;
       eloChange = participant.traditionalEloChange;
       method = 'traditional';
-    } else if (config.calculationMethods.laneComparison.enabled && participant.laneComparisonNewElo !== undefined) {
+    } else if (config.calculationMethods && config.calculationMethods.laneComparison && config.calculationMethods.laneComparison.enabled && participant.laneComparisonNewElo !== undefined) {
       newElo = participant.laneComparisonNewElo;
       eloChange = participant.laneComparisonChange;
       method = 'laneComparison';
-    } else if (config.calculationMethods.hybrid.enabled && participant.hybridNewElo !== undefined) {
+    } else if (config.calculationMethods && config.calculationMethods.hybrid && config.calculationMethods.hybrid.enabled && participant.hybridNewElo !== undefined) {
       newElo = participant.hybridNewElo;
       eloChange = participant.hybridEloChange;
       method = 'hybrid';
@@ -466,9 +466,10 @@ function saveUserStats(gameId, participants) {
     console.log(`${name} [${method}] ELO: ${oldElo} -> ${newElo} (${colorStart}${sign}${diff}${colorEnd})`);
     
     // Show method-specific details if in comparison mode
-    const isComparisonMode = config.calculationMethods.traditional.enabled && 
-                            config.calculationMethods.laneComparison.enabled && 
-                            config.calculationMethods.hybrid.enabled;
+    const isComparisonMode = config.calculationMethods &&
+                            config.calculationMethods.traditional && config.calculationMethods.traditional.enabled && 
+                            config.calculationMethods.laneComparison && config.calculationMethods.laneComparison.enabled && 
+                            config.calculationMethods.hybrid && config.calculationMethods.hybrid.enabled;
     
     if (isComparisonMode) {
       if (participant.traditionalEloChange !== undefined) {
@@ -538,13 +539,25 @@ function runGame(gameId) {
     const name = getPlayerName(p);
     console.log(`${name}:`);
     if (p.traditionalNewElo !== undefined) {
-      console.log(`  Traditional: ${p.traditionalNewElo} (${p.traditionalEloChange >= 0 ? '+' : ''}${p.traditionalEloChange})`);
+      const tDiff = p.traditionalEloChange;
+      const tColor = tDiff > 0 ? '\x1b[32m' : tDiff < 0 ? '\x1b[31m' : '\x1b[37m';
+      const tSign = tDiff > 0 ? '+' : '';
+      const tEnd = '\x1b[0m';
+      console.log(`  Traditional: ${p.traditionalNewElo} (${tColor}${tSign}${tDiff}${tEnd})`);
     }
     if (p.laneComparisonNewElo !== undefined) {
-      console.log(`  Lane Comparison: ${p.laneComparisonNewElo} (${p.laneComparisonChange >= 0 ? '+' : ''}${p.laneComparisonChange})`);
+      const lDiff = p.laneComparisonChange;
+      const lColor = lDiff > 0 ? '\x1b[32m' : lDiff < 0 ? '\x1b[31m' : '\x1b[37m';
+      const lSign = lDiff > 0 ? '+' : '';
+      const lEnd = '\x1b[0m';
+      console.log(`  Lane Comparison: ${p.laneComparisonNewElo} (${lColor}${lSign}${lDiff}${lEnd})`);
     }
     if (p.hybridNewElo !== undefined) {
-      console.log(`  Hybrid: ${p.hybridNewElo} (${p.hybridEloChange >= 0 ? '+' : ''}${p.hybridEloChange})`);
+      const hDiff = p.hybridEloChange;
+      const hColor = hDiff > 0 ? '\x1b[32m' : hDiff < 0 ? '\x1b[31m' : '\x1b[37m';
+      const hSign = hDiff > 0 ? '+' : '';
+      const hEnd = '\x1b[0m';
+      console.log(`  Hybrid: ${p.hybridNewElo} (${hColor}${hSign}${hDiff}${hEnd})`);
     }
   });
 }
