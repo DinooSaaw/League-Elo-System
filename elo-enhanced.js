@@ -60,16 +60,24 @@ function getRole(participant) {
 }
 
 // Calculate normalized performance stats
-function calculatePerformanceStats(participant) {
+function calculatePerformanceStats(participant, gameLengthSeconds) {
   const timeMinutes = Math.max(1, (participant.timePlayed || 1) / 60);
-  const stats = {
+  const wardsPlaced = participant.wardsPlaced || participant.visionWardsBoughtInGame || 0;
+  const wardsCleared = participant.wardsKilled || 0;
+  const turretDamage = participant.damageDealtToTurrets || participant.challenges?.damageDealtToTurrets || 0;
+  const killParticipation = participant.challenges?.killParticipation || 0;
+
+  return {
     kda: participant.deaths > 0 ? (participant.kills + participant.assists) / participant.deaths : (participant.kills + participant.assists) || 1,
     kdaRaw: participant.kills + participant.assists - participant.deaths,
+    killParticipation,
     damagePerMinute: (participant.totalDamageDealtToChampions || 0) / timeMinutes,
     visionScorePerMinute: (participant.visionScore || 0) / timeMinutes,
     csPerMinute: (participant.totalMinionsKilled || 0) / timeMinutes,
     goldPerMinute: (participant.goldEarned || 0) / timeMinutes,
-    killParticipation: participant.challenges?.killParticipation || 0,
+    wardsPlaced,
+    wardsCleared,
+    turretDamage,
     objectiveParticipation: calculateObjectiveParticipation(participant),
     survivalRate: timeMinutes / Math.max(1, participant.deaths),
     utilityScore: calculateUtilityScore(participant),
@@ -79,58 +87,68 @@ function calculatePerformanceStats(participant) {
     soloKills: participant.challenges?.soloKills || 0,
     comebackFactor: calculateComebackFactor(participant)
   };
-  
-  return stats;
 }
 
+// Add missing helper function
 function calculateObjectiveParticipation(participant) {
   const dragonKills = participant.dragonKills || 0;
   const baronKills = participant.baronKills || 0;
   const turretKills = participant.turretKills || 0;
   const inhibitorKills = participant.inhibitorKills || 0;
-  
   return dragonKills * 3 + baronKills * 5 + turretKills * 2 + inhibitorKills * 4;
 }
 
+// Add missing helper function
 function calculateUtilityScore(participant) {
   const healsAndShields = participant.challenges?.effectiveHealAndShielding || 0;
   const ccScore = participant.challenges?.enemyChampionImmobilizations || 0;
   const visionScore = participant.visionScore || 0;
-  
   return healsAndShields / 100 + ccScore * 2 + visionScore;
 }
 
+// Add missing helper function
 function calculateEarlyGamePerformance(participant) {
   const earlyKills = participant.challenges?.killsNearEnemyTurret || 0;
   const earlyFarm = participant.challenges?.laneMinionsFirst10Minutes || 0;
   const firstBlood = (participant.firstBloodKill ? 10 : 0) + (participant.firstBloodAssist ? 5 : 0);
-  
   return earlyKills * 3 + earlyFarm / 10 + firstBlood;
 }
 
+// Add missing helper function
 function calculateLateGamePerformance(participant) {
   const lateKills = participant.challenges?.killsAfterHiddenWithAlly || 0;
   const teamFights = participant.challenges?.teamDamagePercentage || 0;
-  
   return lateKills * 2 + teamFights * 50;
 }
 
+// Add missing helper function
 function calculateTeamFightParticipation(participant) {
   const multikills = (participant.doubleKills || 0) * 2 + 
                      (participant.tripleKills || 0) * 4 + 
                      (participant.quadraKills || 0) * 8 + 
                      (participant.pentaKills || 0) * 16;
-  
   const teamFightKills = participant.challenges?.killsInAllLanes || 0;
-  
   return multikills + teamFightKills;
 }
 
+// Add missing helper function
 function calculateComebackFactor(participant) {
   const goldDeficit = participant.challenges?.maxGoldDeficit || 0;
   const comeback = goldDeficit > 1000 ? Math.log(goldDeficit / 1000) : 0;
-  
   return comeback;
+}
+
+// Helper to get dynamic weights based on game length
+function getDynamicWeights(gameLengthSeconds) {
+  // Early: <22min, Normal: 22-32min, Late: >32min
+  const min = gameLengthSeconds / 60;
+  let earlyWeight = 1, lateWeight = 1;
+  if (min < 22) {
+    earlyWeight = 1.5; lateWeight = 0.7;
+  } else if (min > 32) {
+    earlyWeight = 0.7; lateWeight = 1.5;
+  }
+  return { earlyWeight, lateWeight };
 }
 
 // Calculate lane-based performance comparison
@@ -205,76 +223,86 @@ function calculateLaneComparison(participants) {
 function calculateTraditionalElo(participants) {
   const method = config.calculationMethods && config.calculationMethods.traditional;
   if (!method || !method.enabled) return participants;
-  
-  // Load current ELO for each participant
+
+  // Ensure currentElo is set for all participants
   participants.forEach(p => {
-    p.currentElo = loadPlayerElo(getPlayerName(p));
+    if (typeof p.currentElo !== 'number' || isNaN(p.currentElo)) {
+      p.currentElo = loadPlayerElo(getPlayerName(p));
+    }
   });
-  
+
+  // Calculate average game length and dynamic weights
+  const avgGameLength = participants.reduce((sum, p) => sum + (p.timePlayed || 0), 0) / participants.length;
+  const { earlyWeight, lateWeight } = getDynamicWeights(avgGameLength);
+
   // Group by teams
   const teams = {};
   participants.forEach(p => {
     if (!teams[p.teamId]) teams[p.teamId] = [];
     teams[p.teamId].push(p);
   });
-  
   const teamIds = Object.keys(teams);
+  if (teamIds.length < 2) return participants; // Not enough teams
   const team1 = teams[teamIds[0]];
   const team2 = teams[teamIds[1]];
-  
+  if (!team1.length || !team2.length) return participants; // Defensive: skip if any team is empty
   // Calculate expected results
-  const avgEloTeam1 = team1.reduce((sum, p) => sum + p.currentElo, 0) / team1.length;
-  const avgEloTeam2 = team2.reduce((sum, p) => sum + p.currentElo, 0) / team2.length;
-  
+  const avgEloTeam1 = team1.reduce((sum, p) => sum + (p.currentElo || 0), 0) / team1.length;
+  const avgEloTeam2 = team2.reduce((sum, p) => sum + (p.currentElo || 0), 0) / team2.length;
+  if (!isFinite(avgEloTeam1) || !isFinite(avgEloTeam2)) return participants;
   const expected1 = 1 / (1 + Math.pow(10, (avgEloTeam2 - avgEloTeam1) / 400));
   const expected2 = 1 - expected1;
-  
   const actual1 = team1[0].win ? 1 : 0;
   const actual2 = 1 - actual1;
-  
-  // Calculate performance modifiers
+  // Calculate performance modifiers (dynamic scaling, KP > KDA, new metrics)
   participants.forEach(p => {
-    const perfStats = calculatePerformanceStats(p);
+    const perfStats = calculatePerformanceStats(p, avgGameLength);
     const performanceScore = (
-      perfStats.kda * config.performanceWeights.kda +
-      (perfStats.damagePerMinute / 500) * config.performanceWeights.damage +
-      (perfStats.visionScorePerMinute / 2) * config.performanceWeights.vision +
-      (perfStats.objectiveParticipation / 10) * config.performanceWeights.objectives +
-      (perfStats.csPerMinute / 8) * config.performanceWeights.farm +
-      (perfStats.survivalRate / 10) * config.performanceWeights.survival +
-      (perfStats.utilityScore / 50) * config.performanceWeights.utility
+      perfStats.killParticipation * 0.28 +
+      perfStats.kda * 0.12 +
+      (perfStats.damagePerMinute / 500) * 0.18 +
+      (perfStats.objectiveParticipation / 10) * 0.10 * earlyWeight +
+      (perfStats.csPerMinute / 8) * 0.08 * earlyWeight +
+      (perfStats.visionScorePerMinute / 2) * 0.06 +
+      (perfStats.wardsPlaced / 5) * 0.04 +
+      (perfStats.wardsCleared / 3) * 0.04 +
+      (perfStats.turretDamage / 2000) * 0.05 * lateWeight +
+      perfStats.lateGamePerformance * 0.05 * lateWeight
     );
-    
-    p.performanceScore = Math.max(0, Math.min(2, performanceScore)); // Clamp between 0-2
-    
+    p.performanceScore = Math.max(0, Math.min(2, performanceScore));
     // Calculate performance modifier
+    const minPerf = typeof method.minPerformanceBonus === 'number' ? method.minPerformanceBonus : 0;
+    const maxPerf = typeof method.maxPerformanceBonus === 'number' ? method.maxPerformanceBonus : 100;
     const performanceModifier = Math.max(
-      method.minPerformanceBonus,
-      Math.min(method.maxPerformanceBonus, (p.performanceScore - 1) * 100)
+      minPerf,
+      Math.min(maxPerf, (p.performanceScore - 1) * 100)
     );
-    
     p.performanceModifier = performanceModifier;
   });
-  
   // Apply ELO changes
-  const k = config.kFactor || 64;
-  
+  const k = typeof config.kFactor === 'number' ? config.kFactor : 64;
+  const teamResultWeight = typeof method.teamResultWeight === 'number' ? method.teamResultWeight : 1;
+  const performanceWeight = typeof method.performanceWeight === 'number' ? method.performanceWeight : 1;
   team1.forEach(p => {
     const baseChange = k * (actual1 - expected1);
-    const teamComponent = baseChange * method.teamResultWeight;
-    const performanceComponent = p.performanceModifier * method.performanceWeight;
-    p.traditionalEloChange = Math.round(teamComponent + performanceComponent);
+    const teamComponent = baseChange * teamResultWeight;
+    const performanceComponent = p.performanceModifier * performanceWeight;
+    let eloChange = Math.round(teamComponent + performanceComponent);
+    // Ensure losers always lose ELO
+    if (!p.win && eloChange >= 0) eloChange = -1;
+    p.traditionalEloChange = eloChange;
     p.traditionalNewElo = Math.max(0, p.currentElo + p.traditionalEloChange);
   });
-  
   team2.forEach(p => {
     const baseChange = k * (actual2 - expected2);
-    const teamComponent = baseChange * method.teamResultWeight;
-    const performanceComponent = p.performanceModifier * method.performanceWeight;
-    p.traditionalEloChange = Math.round(teamComponent + performanceComponent);
+    const teamComponent = baseChange * teamResultWeight;
+    const performanceComponent = p.performanceModifier * performanceWeight;
+    let eloChange = Math.round(teamComponent + performanceComponent);
+    // Ensure losers always lose ELO
+    if (!p.win && eloChange >= 0) eloChange = -1;
+    p.traditionalEloChange = eloChange;
     p.traditionalNewElo = Math.max(0, p.currentElo + p.traditionalEloChange);
   });
-  
   return participants;
 }
 
@@ -282,32 +310,56 @@ function calculateTraditionalElo(participants) {
 function calculateLaneComparisonElo(participants) {
   const method = config.calculationMethods && config.calculationMethods.laneComparison;
   if (!method || !method.enabled) return participants;
-  
+
+  // Ensure currentElo is set for all participants
+  participants.forEach(p => {
+    if (typeof p.currentElo !== 'number' || isNaN(p.currentElo)) {
+      p.currentElo = loadPlayerElo(getPlayerName(p));
+    }
+  });
+
+  // Calculate average game length and dynamic weights
+  const avgGameLength = participants.reduce((sum, p) => sum + (p.timePlayed || 0), 0) / participants.length;
+  const { earlyWeight, lateWeight } = getDynamicWeights(avgGameLength);
+
   calculateLaneComparison(participants);
-  
+
   participants.forEach(p => {
     // Lane comparison bonus/penalty
     const laneBonus = p.laneRankPercentile ? 
-      (p.laneRankPercentile - 0.5) * 2 * method.maxLaneBonus : 0;
-    
+      (p.laneRankPercentile - 0.5) * 2 * (typeof method.maxLaneBonus === 'number' ? method.maxLaneBonus : 20) : 0;
     // Team result bonus/penalty
-    const teamBonus = p.win ? method.maxTeamBonus : -method.maxTeamBonus;
-    
-    // Individual performance bonus
-    const perfStats = calculatePerformanceStats(p);
-    const individualScore = (perfStats.kda + perfStats.killParticipation) / 2;
-    const individualBonus = (individualScore - 1) * method.maxIndividualBonus;
-    
-    // Weighted combination
-    p.laneComparisonChange = Math.round(
-      laneBonus * method.laneWeight +
-      teamBonus * method.teamWeight +
-      individualBonus * method.individualWeight
+    const teamBonus = p.win ? (typeof method.maxTeamBonus === 'number' ? method.maxTeamBonus : 20) : -(typeof method.maxTeamBonus === 'number' ? method.maxTeamBonus : 20);
+    // Individual performance bonus (dynamic scaling, KP > KDA, new metrics)
+    const perfStats = calculatePerformanceStats(p, avgGameLength);
+    const individualScore = (
+      perfStats.killParticipation * 0.28 +
+      perfStats.kda * 0.12 +
+      (perfStats.damagePerMinute / 500) * 0.18 +
+      (perfStats.objectiveParticipation / 10) * 0.10 * earlyWeight +
+      (perfStats.csPerMinute / 8) * 0.08 * earlyWeight +
+      (perfStats.visionScorePerMinute / 2) * 0.06 +
+      (perfStats.wardsPlaced / 5) * 0.04 +
+      (perfStats.wardsCleared / 3) * 0.04 +
+      (perfStats.turretDamage / 2000) * 0.05 * lateWeight +
+      perfStats.lateGamePerformance * 0.05 * lateWeight
     );
-    
+    const maxIndividualBonus = typeof method.maxIndividualBonus === 'number' ? method.maxIndividualBonus : 20;
+    const individualBonus = (individualScore - 1) * maxIndividualBonus;
+    // Weighted combination
+    const laneWeight = typeof method.laneWeight === 'number' ? method.laneWeight : 1;
+    const teamWeight = typeof method.teamWeight === 'number' ? method.teamWeight : 1;
+    const individualWeight = typeof method.individualWeight === 'number' ? method.individualWeight : 1;
+    let eloChange = Math.round(
+      laneBonus * laneWeight +
+      teamBonus * teamWeight +
+      individualBonus * individualWeight
+    );
+    // Ensure losers always lose ELO
+    if (!p.win && eloChange >= 0) eloChange = -1;
+    p.laneComparisonChange = eloChange;
     p.laneComparisonNewElo = Math.max(0, p.currentElo + p.laneComparisonChange);
   });
-  
   return participants;
 }
 
@@ -315,54 +367,78 @@ function calculateLaneComparisonElo(participants) {
 function calculateHybridElo(participants) {
   const method = config.calculationMethods && config.calculationMethods.hybrid;
   if (!method || !method.enabled) return participants;
-  
+
+  // Use average game length for scaling
+  const avgGameLength = participants.reduce((sum, p) => sum + (p.timePlayed || 0), 0) / participants.length;
+  const { earlyWeight, lateWeight } = getDynamicWeights(avgGameLength);
+
+  // Calculate performance scores and win/loss grouping
+  const teamGroups = {};
   participants.forEach(p => {
-    const perfStats = calculatePerformanceStats(p);
-    
-    // Calculate comprehensive performance score (0-2 range, 1 = average)
+    const perfStats = calculatePerformanceStats(p, avgGameLength);
     const performanceScore = (
-      perfStats.kda * 0.3 +
-      perfStats.killParticipation * 0.2 +
-      (perfStats.damagePerMinute / 500) * 0.2 +
-      (perfStats.objectiveParticipation / 10) * 0.15 +
-      (perfStats.csPerMinute / 8) * 0.1 +
-      (perfStats.visionScorePerMinute / 2) * 0.05
+      perfStats.killParticipation * 0.28 +
+      perfStats.kda * 0.12 +
+      (perfStats.damagePerMinute / 500) * 0.18 +
+      (perfStats.objectiveParticipation / 10) * 0.10 * earlyWeight +
+      (perfStats.csPerMinute / 8) * 0.08 * earlyWeight +
+      (perfStats.visionScorePerMinute / 2) * 0.06 +
+      (perfStats.wardsPlaced / 5) * 0.04 +
+      (perfStats.wardsCleared / 3) * 0.04 +
+      (perfStats.turretDamage / 2000) * 0.05 * lateWeight +
+      perfStats.lateGamePerformance * 0.05 * lateWeight
     );
-    
+    p.performanceScore = performanceScore;
+    if (!teamGroups[p.teamId]) teamGroups[p.teamId] = [];
+    teamGroups[p.teamId].push(p);
+  });
+
+  // Identify winning and losing teams
+  const teamIds = Object.keys(teamGroups);
+  const team1 = teamGroups[teamIds[0]];
+  const team2 = teamGroups[teamIds[1]];
+  const team1Win = team1[0].win;
+  const winningTeam = team1Win ? team1 : team2;
+  const losingTeam = team1Win ? team2 : team1;
+
+  // Assign ELO changes for winners (as before)
+  winningTeam.forEach(p => {
+    const baseWinElo = method.baseEloChange;
     let eloChange;
-    
-    if (p.win) {
-      // WIN: Always positive ELO, but amount varies by performance
-      const baseWinElo = method.baseEloChange;
-      
-      if (performanceScore < 1) {
-        // Poor performance (got carried): minimum win ELO
-        const reductionFactor = method.winBonusReduction;
-        eloChange = Math.max(5, baseWinElo * reductionFactor); // Never less than +5
-      } else {
-        // Good performance: enhanced win ELO
-        const performanceBonus = (performanceScore - 1) * method.performanceMultiplier;
-        eloChange = baseWinElo + performanceBonus;
-      }
+    if (p.performanceScore < 1) {
+      const reductionFactor = method.winBonusReduction;
+      eloChange = Math.max(5, baseWinElo * reductionFactor);
     } else {
-      // LOSS: Always negative ELO, but amount varies by performance
-      const baseLossElo = -method.baseEloChange;
-      
-      if (performanceScore > 1) {
-        // Good performance despite loss: reduced penalty
-        const reductionFactor = method.lossPenaltyReduction;
-        eloChange = Math.min(-5, baseLossElo * reductionFactor); // Never more than -5
-      } else {
-        // Poor performance: enhanced penalty
-        const performancePenalty = (1 - performanceScore) * method.performanceMultiplier;
-        eloChange = baseLossElo - performancePenalty;
-      }
+      const performanceBonus = (p.performanceScore - 1) * method.performanceMultiplier;
+      eloChange = baseWinElo + performanceBonus;
     }
-    
     p.hybridEloChange = Math.round(eloChange);
     p.hybridNewElo = Math.max(0, p.currentElo + p.hybridEloChange);
   });
-  
+
+  // Assign unique, performance-based ELO losses for losers
+  // 1. Calculate a base loss pool (sum of what would have been lost)
+  // 2. Distribute losses so that lower performers lose more
+  const baseLossElo = -method.baseEloChange;
+  // Calculate inverse performance scores (lower score = higher loss)
+  const perfScores = losingTeam.map(p => Math.max(0.1, p.performanceScore));
+  const invScores = perfScores.map(s => 1 / s);
+  const invSum = invScores.reduce((a, b) => a + b, 0);
+  // Total loss pool (sum of base losses, or scale as needed)
+  const totalLoss = baseLossElo * losingTeam.length;
+  // Distribute losses
+  losingTeam.forEach((p, idx) => {
+    // Each player's share is proportional to their inverse performance
+    const share = invScores[idx] / invSum;
+    let eloChange = totalLoss * share;
+    // Optionally, add a penalty for very low performance
+    if (p.performanceScore < 0.7) eloChange *= 1.1;
+    // Ensure losers always lose ELO
+    if (eloChange >= 0) eloChange = -1;
+    p.hybridEloChange = Math.round(eloChange);
+    p.hybridNewElo = Math.max(0, p.currentElo + p.hybridEloChange);
+  });
+
   return participants;
 }
 
@@ -580,6 +656,11 @@ function runAllGames() {
 const [,, mode, arg] = process.argv;
 
 if (mode === 'compare') {
+  // Ensure calculationMethods and sub-methods exist
+  if (!config.calculationMethods) config.calculationMethods = {};
+  if (!config.calculationMethods.traditional) config.calculationMethods.traditional = {};
+  if (!config.calculationMethods.laneComparison) config.calculationMethods.laneComparison = {};
+  if (!config.calculationMethods.hybrid) config.calculationMethods.hybrid = {};
   // Enable all methods for comparison
   config.calculationMethods.traditional.enabled = true;
   config.calculationMethods.laneComparison.enabled = true;
