@@ -11,6 +11,22 @@
       "performanceMultiplier": 1.5, // Extra ELO for good/bad performance
       "winBonusReduction": 0.4,     // Poor win: 25 * 0.4 = +10 min
       "lossPenaltyReduction": 0.4   // Good loss: 25 * 0.4 = -10 min
+    },
+    "traditional": { 
+      "enabled": false,
+      "performanceWeight": 0.3,     // 30% individual, 70% team
+      "teamResultWeight": 0.7,
+      "maxPerformanceBonus": 80,
+      "minPerformanceBonus": -60
+    },
+    "laneComparison": { 
+      "enabled": false,
+      "laneWeight": 0.6,        // Heavy weight on lane performance
+      "teamWeight": 0.25,       // Moderate team weight
+      "individualWeight": 0.15, // Light individual weight
+      "maxLaneBonus": 100,
+      "maxTeamBonus": 50,
+      "maxIndividualBonus": 30
     }
   },
 
