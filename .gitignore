@@ -9,7 +9,7 @@ node_modules/
 
 # Logs
 *.log
-elo-log.txt
+elo-log.csv
 
 # Match and player data
 game_*/

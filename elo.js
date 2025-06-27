@@ -107,7 +107,7 @@ function saveUserStats(gameId, participants) {
     hours = hours % 12;
     if (hours === 0) hours = 12;
     const formatted = `${now.getFullYear().toString().slice(2)}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}-${hours}-${String(now.getMinutes()).padStart(2,'0')}-${ampm}`;
-    fs.appendFileSync('elo-log.txt', `${formatted},${name},${oldElo},${newElo}\n`);
+    fs.appendFileSync('elo-log.csv', `${formatted},${name},${oldElo},${newElo}\n`);
   }
 }
 
