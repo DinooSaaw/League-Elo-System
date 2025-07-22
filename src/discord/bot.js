@@ -46,7 +46,7 @@ class DiscordBot {
 
     try {
       // Initialize database connection
-      console.log('� Connecting to database...');
+      console.log('🔌 Connecting to database...');
       await database.connect();
       await database.createIndexes();
 
