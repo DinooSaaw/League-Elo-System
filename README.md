@@ -1,26 +1,45 @@
-# League ELO System v2.0
+# League ELO System v2.1
 
-A comprehensive, clean, and organized ELO rating system for League of Legends matches with MongoDB integration.
+A comprehensive, clean, and organized ELO rating system for League of Legends matches with MongoDB integration and a fully modular Discord bot.
 
 ## 🚀 Features
 
 - **Clean Project Structure**: Organized folders for games, matches, and source code
 - **MongoDB Integration**: All player data stored in MongoDB for better performance
-- **Discord Bot Integration**: Complete Discord bot with slash commands and rich embeds
+- **Modular Discord Bot**: Professional Discord bot with command/event handlers and deployment utilities
+- **Rich Embeds**: Beautiful Discord embeds with custom branding and consistent styling
 - **Convenient Entry Point**: Simple `npm start` commands for all operations
 - **Multiple ELO Calculation Methods**: Traditional, Hybrid, and Lane Comparison algorithms
 - **Match Fetching**: Automatic fetching from Riot Games API
 - **Comprehensive Leaderboards**: Multiple ranking categories and detailed player statistics
 - **Migration Tools**: Easy migration from legacy file-based storage
+- **Command Management**: Deploy, list, and remove Discord slash commands easily
 
 ## 📁 Clean Project Structure
 
-``` bash
+```bash
 League Elo System/
 ├── 📁 src/                       # Source code (organized)
 │   ├── main.js                   # Main application logic
-│   ├── 📁 discord/
-│   │   └── bot.js                # Discord bot with slash commands
+│   ├── 📁 discord/               # Discord bot (modular architecture)
+│   │   ├── bot.js                # Main bot entry point
+│   │   ├── 📁 commands/          # Individual slash commands
+│   │   │   ├── leaderboard.js    # /leaderboard command
+│   │   │   ├── player.js         # /player command
+│   │   │   ├── elo.js            # /elo command with subcommands
+│   │   │   ├── dbstats.js        # /dbstats command
+│   │   │   ├── fetch.js          # /fetch command with subcommands
+│   │   │   └── help.js           # /help command
+│   │   ├── 📁 events/            # Discord event handlers
+│   │   │   ├── ready.js          # Bot ready event
+│   │   │   └── interactionCreate.js # Slash command interactions
+│   │   ├── 📁 handlers/          # Command and event loaders
+│   │   │   ├── commandHandler.js # Dynamic command loading
+│   │   │   └── eventHandler.js   # Dynamic event loading
+│   │   └── 📁 deploy/            # Command deployment utilities
+│   │       ├── deploy-commands.js # Deploy commands to Discord
+│   │       ├── list-commands.js  # List registered commands
+│   │       └── remove-commands.js # Remove commands
 │   ├── 📁 database/
 │   │   └── mongodb.js            # MongoDB connection and operations
 │   ├── 📁 elo/
@@ -36,7 +55,47 @@ League Elo System/
 ├── index.js                      # Main entry point
 ├── package.json                  # Dependencies and convenient scripts
 ├── elo-config.jsonc             # ELO calculation configuration
+├── .env.example                 # Environment variables template
+├── DISCORD_BOT_ARCHITECTURE.md # Discord bot documentation
 └── README.md                    # This file
+```
+
+## 🤖 Discord Bot Features
+
+### Modular Architecture
+
+- **Command Handler**: Automatically loads all commands from the commands directory
+- **Event Handler**: Dynamically registers Discord events
+- **Individual Files**: Each command and event in its own file for easy maintenance
+- **Error Handling**: Built-in error catching and user-friendly messages
+- **Hot Deployment**: Deploy new commands without restarting the bot
+
+### Available Discord Commands
+
+- **`/leaderboard [mingames]`** - Display ELO leaderboard with customizable filters
+- **`/player <name>`** - Show detailed player statistics and ELO history
+- **`/elo all`** - Process all available games and calculate ELO
+- **`/elo single <gameid>`** - Process a specific game by ID
+- **`/elo compare <gameid>`** - Compare different ELO calculation methods
+- **`/fetch riotid <gamename> <tagline> [numgames]`** - Fetch matches by Riot ID
+- **`/fetch puuid <puuid> [numgames]`** - Fetch matches by PUUID
+- **`/dbstats`** - Display database statistics and health information
+- **`/help`** - Show comprehensive command documentation
+
+### Discord Bot Management
+
+```bash
+# Deploy all commands to Discord
+npm run bot:deploy
+
+# Start the Discord bot
+npm run bot
+
+# List all registered commands
+npm run bot:list
+
+# Remove all commands from Discord
+npm run bot:remove
 ```
 
 ## � Quick Start
@@ -47,7 +106,7 @@ League Elo System/
 npm install
 ```
 
-### 2. Set up environment (optional for basic usage)
+### 2. Set up environment
 
 Create a `.env` file in the root directory:
 
@@ -56,11 +115,21 @@ Create a `.env` file in the root directory:
 MONGODB_URI=mongodb://localhost:27017
 MONGODB_DB_NAME=league_elo_system
 
+# Discord Bot Configuration (required for Discord bot)
+DISCORD_BOT_TOKEN=your_bot_token_here
+DISCORD_CLIENT_ID=your_client_id_here
+
 # Riot Games API Key (required only for fetching new matches)
 # RIOT_API_KEY=your_riot_api_key_here
 ```
 
-### 3. Start using the system
+### 3. Deploy Discord commands (if using Discord bot)
+
+```bash
+npm run bot:deploy
+```
+
+### 4. Start using the system
 
 **View help and available commands:**
 
@@ -85,6 +154,9 @@ npm run migrate
 
 # Start Discord bot
 npm run bot
+
+# Deploy Discord bot commands
+npm run bot:deploy
 ```
 
 **Manual commands for specific operations:**
@@ -111,6 +183,13 @@ All commands can be run with `npm start <command>` or the convenient shortcuts:
 - `npm run db:stats` - Database statistics
 - `npm run migrate` - Run all migrations
 - `npm run help` - Show help information
+
+### Discord Bot Scripts
+
+- `npm run bot` - Start the Discord bot
+- `npm run bot:deploy` - Deploy all slash commands to Discord
+- `npm run bot:list` - List all registered commands
+- `npm run bot:remove` - Remove all commands from Discord
 
 ### Manual Commands
 
@@ -256,6 +335,52 @@ If you're upgrading from the legacy version:
 
 ## 🔧 Development
 
+### Adding New Discord Commands
+
+1. Create a new file in `src/discord/commands/newcommand.js`:
+
+```javascript
+import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+
+export default {
+  data: new SlashCommandBuilder()
+    .setName('newcommand')
+    .setDescription('Description of the new command'),
+
+  async execute(interaction) {
+    await interaction.deferReply();
+    
+    const embed = new EmbedBuilder()
+      .setColor(0x00FF00)
+      .setTitle('✅ New Command')
+      .setDescription('Command executed successfully!')
+      .setTimestamp()
+      .setFooter({ text: 'Powered By The Brightest Candle', iconURL: 'https://cdn.discordapp.com/avatars/679647972539105298/5dc8eae2a3a97e0ebbec852d4e969411.webp?size=300' });
+
+    await interaction.editReply({ embeds: [embed] });
+  },
+};
+```
+
+1. Deploy the command: `npm run bot:deploy`
+
+### Adding New Discord Events
+
+1. Create a new file in `src/discord/events/newevent.js`:
+
+```javascript
+export default {
+  name: 'guildMemberAdd',  // Discord.js event name
+  once: false,             // Set to true for once() instead of on()
+  async execute(member) {
+    console.log(`New member joined: ${member.user.tag}`);
+  },
+};
+```
+
+<!-- markdownlint-disable-next-line MD029 -->
+2. Restart the bot: `npm run bot`
+
 ### Adding New ELO Methods
 
 1. Create method in `src/elo/calculator.js`
@@ -295,16 +420,21 @@ await database.savePlayer(playerData);
    - Check connection string in `.env`
    - Verify firewall settings
 
-2. **Riot API Rate Limits**
+2. **Discord Bot Issues**
+   - Verify `DISCORD_BOT_TOKEN` and `DISCORD_CLIENT_ID` in `.env`
+   - Ensure bot has proper permissions in Discord server
+   - Check that commands are deployed with `npm run bot:deploy`
+
+3. **Riot API Rate Limits**
    - The system automatically handles rate limits
    - Ensure your API key is valid and not expired
 
-3. **Migration Issues**
+4. **Migration Issues**
    - Backup your data before migration
    - Check file permissions
    - Ensure MongoDB is accessible
 
-4. **Missing Game Data**
+5. **Missing Game Data**
    - Verify game folders exist in correct location
    - Check participant JSON file format
    - Run data validation
