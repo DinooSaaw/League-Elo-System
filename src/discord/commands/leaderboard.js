@@ -128,7 +128,7 @@ export default {
         typeSpecificStats = [
           { name: '📈 Average ELO', value: `\`${avgElo}\``, inline: true },
           { name: '🔥 Highest ELO', value: `\`${highestElo}\``, inline: true },
-          { name: '� Lowest ELO', value: `\`${lowestElo}\``, inline: true }
+          { name: '📉 Lowest ELO', value: `\`${lowestElo}\``, inline: true }
         ];
         break;
       
