@@ -6,6 +6,7 @@ A comprehensive, clean, and organized ELO rating system for League of Legends ma
 
 - **Clean Project Structure**: Organized folders for games, matches, and source code
 - **MongoDB Integration**: All player data stored in MongoDB for better performance
+- **Discord Bot Integration**: Complete Discord bot with slash commands and rich embeds
 - **Convenient Entry Point**: Simple `npm start` commands for all operations
 - **Multiple ELO Calculation Methods**: Traditional, Hybrid, and Lane Comparison algorithms
 - **Match Fetching**: Automatic fetching from Riot Games API
@@ -18,6 +19,8 @@ A comprehensive, clean, and organized ELO rating system for League of Legends ma
 League Elo System/
 ├── 📁 src/                       # Source code (organized)
 │   ├── main.js                   # Main application logic
+│   ├── 📁 discord/
+│   │   └── bot.js                # Discord bot with slash commands
 │   ├── 📁 database/
 │   │   └── mongodb.js            # MongoDB connection and operations
 │   ├── 📁 elo/
@@ -79,6 +82,9 @@ npm run db:stats
 
 # Migrate data (if upgrading)
 npm run migrate
+
+# Start Discord bot
+npm run bot
 ```
 
 **Manual commands for specific operations:**
