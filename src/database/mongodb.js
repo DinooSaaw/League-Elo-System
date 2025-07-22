@@ -61,7 +61,7 @@ class Database {
 
   async savePlayer(playerData) {
     const players = await this.getCollection('players');
-    const { name, ...data } = playerData;
+    const { name, createdAt, updatedAt, ...data } = playerData;
     
     return await players.updateOne(
       { name },
@@ -95,7 +95,7 @@ class Database {
   // Game operations
   async saveGame(gameData) {
     const games = await this.getCollection('games');
-    const { gameId, ...data } = gameData;
+    const { gameId, createdAt, updatedAt, ...data } = gameData;
     
     return await games.updateOne(
       { gameId },
@@ -126,7 +126,7 @@ class Database {
   // Match operations
   async saveMatch(matchData) {
     const matches = await this.getCollection('matches');
-    const { matchId, ...data } = matchData;
+    const { matchId, createdAt, updatedAt, ...data } = matchData;
     
     return await matches.updateOne(
       { matchId },

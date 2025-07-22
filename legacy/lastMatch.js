@@ -53,7 +53,7 @@ async function getSummonerByPUUID(puuid) {
 }
 
 async function getPUUIDByRiotId(gameName, tagLine) {
-  const url = `https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+  const url = `https://${REGION}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
   return (await riotFetch(url)).puuid;
 }
 

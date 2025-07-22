@@ -13,6 +13,7 @@ elo-log.csv
 
 # Match and player data
 game_*/
+matches*/
 player/
 lastMatch_*.json
 
