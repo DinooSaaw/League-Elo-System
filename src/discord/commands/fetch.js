@@ -39,27 +39,46 @@ export default {
             .setDescription('Number of games to fetch (default: 1)')
             .setRequired(false)
         )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('gameid')
+        .setDescription('Fetch by Game ID')
+        .addStringOption(option =>
+          option.setName('gameid')
+            .setDescription('Game ID (e.g., 670885753 or OC1_670885753)')
+            .setRequired(true)
+        )
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
 
     const subcommand = interaction.options.getSubcommand();
-    const numGames = interaction.options.getInteger('numgames') || 1;
 
     try {
       let results;
+      let numGames = 1;
 
       switch (subcommand) {
         case 'riotid':
           const gameName = interaction.options.getString('gamename');
           const tagLine = interaction.options.getString('tagline');
+          numGames = interaction.options.getInteger('numgames') || 1;
           results = await matchFetcher.fetchMatchesByRiotId(gameName, tagLine, numGames);
           break;
 
         case 'puuid':
           const puuid = interaction.options.getString('puuid');
+          numGames = interaction.options.getInteger('numgames') || 1;
           results = await matchFetcher.fetchMatches(puuid, numGames);
+          break;
+
+        case 'gameid':
+          const gameId = interaction.options.getString('gameid');
+          const result = await matchFetcher.fetchMatchByGameId(gameId);
+          results = [result]; // Make it an array for consistent handling
+          numGames = 1;
           break;
       }
 
@@ -69,14 +88,16 @@ export default {
         .setDescription(`Successfully fetched ${results.length} match(es)!`)
         .addFields(
           { name: '📥 Matches Fetched', value: `\`${results.length}\``, inline: true },
-          { name: '🎮 Games to Process', value: `\`${numGames}\``, inline: true }
+          { name: '🎮 Requested', value: `\`${numGames}\``, inline: true }
         )
         .setTimestamp();
 
       if (results.length > 0) {
         let matchList = '';
         results.forEach((result, index) => {
+          const participants = result.participants || (result.match?.info?.participants?.length || 'Unknown');
           matchList += `${index + 1}. Game ${result.gameId} - \`${result.filename}\`\n`;
+          matchList += `    Players: ${participants} | Match ID: \`${result.matchId}\`\n`;
         });
         embed.addFields({ name: '📁 Saved Files', value: matchList, inline: false });
       }

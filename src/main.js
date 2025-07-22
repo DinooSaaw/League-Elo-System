@@ -17,12 +17,13 @@ class LeagueEloSystem {
           compare: 'Compare ELO calculation methods'
         }
       },
-      fetch: {
+        fetch: {
         description: 'Fetch matches from Riot API',
         subcommands: {
           puuid: 'Fetch by PUUID',
           riotid: 'Fetch by Riot ID (gameName#tagLine)',
-          summoner: 'Fetch by summoner name'
+          summoner: 'Fetch by summoner name',
+          gameid: 'Fetch by Game ID'
         }
       },
       leaderboard: {
@@ -88,6 +89,8 @@ class LeagueEloSystem {
     console.log('  node src/main.js elo compare 670885753');
     console.log('  node src/main.js fetch puuid <puuid> [numGames]');
     console.log('  node src/main.js fetch riotid <gameName> <tagLine> [numGames]');
+    console.log('  node src/main.js fetch summoner <summonerName> [numGames]');
+    console.log('  node src/main.js fetch gameid <gameId>');
     console.log('  node src/main.js leaderboard show [minGames]');
     console.log('  node src/main.js leaderboard player <playerName>');
     console.log('  node src/main.js migrate all');
@@ -156,8 +159,16 @@ class LeagueEloSystem {
         await matchFetcher.fetchMatchesBySummonerName(args[0], numGamesSummoner);
         break;
 
+      case 'gameid':
+        if (!args[0]) {
+          console.error('Game ID required. Usage: fetch gameid <gameId>');
+          return;
+        }
+        await matchFetcher.fetchMatchByGameId(args[0]);
+        break;
+
       default:
-        console.error('Unknown fetch subcommand. Available: puuid, riotid, summoner');
+        console.error('Unknown fetch subcommand. Available: puuid, riotid, summoner, gameid');
     }
   }
 

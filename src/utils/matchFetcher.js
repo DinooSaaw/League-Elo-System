@@ -72,6 +72,32 @@ class MatchFetcher {
     return this.riotFetch(url);
   }
 
+  async getMatchByGameId(gameId) {
+    // Game ID format: OC1_670885753 or just 670885753
+    let matchId = gameId;
+    
+    // If it's just a numeric game ID, try common prefixes
+    if (/^\d+$/.test(gameId)) {
+      const prefixes = ['OC1_', 'NA1_', 'EUW1_'];
+      
+      for (const prefix of prefixes) {
+        try {
+          matchId = `${prefix}${gameId}`;
+          console.log(`Trying match ID: ${matchId}`);
+          return await this.getMatchDetails(matchId);
+        } catch (error) {
+          console.log(`Failed with ${matchId}: ${error.message}`);
+          continue;
+        }
+      }
+      
+      throw new Error(`Could not find match with game ID ${gameId}. Tried prefixes: ${prefixes.join(', ')}`);
+    } else {
+      // It's already a full match ID
+      return await this.getMatchDetails(matchId);
+    }
+  }
+
   // File operations
   sanitizeFilename(name) {
     return fileManager.sanitizeFilename(name);
@@ -198,6 +224,44 @@ class MatchFetcher {
   async fetchMatchesBySummonerName(summonerName, numGames = 3) {
     const puuid = await this.getSummonerPUUID(summonerName);
     return this.fetchMatches(puuid, numGames);
+  }
+
+  // Fetch single match by game ID
+  async fetchMatchByGameId(gameId) {
+    try {
+      console.log(`Fetching match with game ID: ${gameId}...`);
+      
+      const match = await this.getMatchByGameId(gameId);
+      
+      // Display match info
+      const firstParticipant = match.info.participants[0];
+      const output = `Match ${match.metadata.matchId}:
+  Game ID: ${match.info.gameId}
+  Game Mode: ${match.info.gameMode}
+  Duration: ${Math.floor(match.info.gameDuration / 60)}m ${match.info.gameDuration % 60}s
+  Date: ${new Date(match.info.gameStartTimestamp).toLocaleString()}
+  Players: ${match.info.participants.length}`;
+      
+      console.log(output);
+
+      // Save match data and participants
+      const { filePath, filename, gameId: savedGameId } = await this.saveMatchData(match);
+      await this.saveAllParticipants(match);
+
+      console.log(`Match data saved to ${filename}`);
+      
+      return {
+        matchId: match.metadata.matchId,
+        gameId: savedGameId,
+        filePath,
+        filename,
+        match,
+        participants: match.info.participants.length
+      };
+    } catch (error) {
+      console.error('Error fetching match by game ID:', error.message);
+      throw error;
+    }
   }
 }
 
