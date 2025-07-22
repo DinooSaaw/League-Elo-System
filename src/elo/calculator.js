@@ -397,7 +397,41 @@ class EloCalculator {
         processedAt: new Date()
       });
 
-      return updatedParticipants;
+      // Return structured data for Discord embeds
+      return {
+        gameId,
+        participants: updatedParticipants.map(p => {
+          const name = this.getPlayerName(p);
+          let method = 'none';
+          let oldElo = p.currentElo;
+          let newElo = oldElo;
+          let eloChange = 0;
+
+          if (this.config.calculationMethods?.hybrid?.enabled && p.hybridNewElo !== undefined) {
+            newElo = p.hybridNewElo;
+            eloChange = p.hybridEloChange;
+            method = 'hybrid';
+          } else if (this.config.calculationMethods?.traditional?.enabled && p.traditionalNewElo !== undefined) {
+            newElo = p.traditionalNewElo;
+            eloChange = p.traditionalEloChange;
+            method = 'traditional';
+          }
+
+          return {
+            name,
+            champion: p.championName,
+            kills: p.kills,
+            deaths: p.deaths,
+            assists: p.assists,
+            win: p.win,
+            oldElo,
+            newElo,
+            eloChange,
+            method,
+            performanceScore: p.performanceScore
+          };
+        })
+      };
     } catch (error) {
       console.error(`Error processing game ${gameId}:`, error.message);
       throw error;
@@ -427,10 +461,17 @@ class EloCalculator {
     this.config.calculationMethods.hybrid.enabled = true;
 
     try {
-      const participants = await this.processGame(gameId);
+      const files = fileManager.getParticipantFiles(gameId);
+      const participants = files.map(file => {
+        const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
+        return data;
+      });
+
+      // Calculate ELO using all methods (but don't save to database)
+      const updatedParticipants = await this.calculateAllEloMethods(participants);
       
       console.log('\n=== ELO METHOD COMPARISON ===');
-      participants.forEach(p => {
+      updatedParticipants.forEach(p => {
         const name = this.getPlayerName(p);
         console.log(`\n${name}:`);
         
@@ -450,6 +491,32 @@ class EloCalculator {
           console.log(`  Hybrid: ${p.hybridNewElo} (${hColor}${hSign}${hDiff}${hEnd})`);
         }
       });
+
+      // Return structured data for Discord embeds
+      return {
+        gameId,
+        participants: updatedParticipants.map(p => {
+          const name = this.getPlayerName(p);
+          return {
+            name,
+            champion: p.championName,
+            kills: p.kills,
+            deaths: p.deaths,
+            assists: p.assists,
+            win: p.win,
+            currentElo: p.currentElo,
+            traditional: p.traditionalNewElo !== undefined ? {
+              newElo: p.traditionalNewElo,
+              change: p.traditionalEloChange
+            } : null,
+            hybrid: p.hybridNewElo !== undefined ? {
+              newElo: p.hybridNewElo,
+              change: p.hybridEloChange
+            } : null,
+            performanceScore: p.performanceScore
+          };
+        })
+      };
     } finally {
       // Restore original config
       this.config.calculationMethods = originalConfig;

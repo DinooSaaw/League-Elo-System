@@ -1,11 +1,15 @@
 {
   "name": "league-elo-system",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js",
     "dev": "node src/main.js",
+    "bot": "node src/discord/bot.js",
+    "bot:deploy": "node src/discord/deploy/deploy-commands.js",
+    "bot:list": "node src/discord/deploy/list-commands.js",
+    "bot:remove": "node src/discord/deploy/remove-commands.js",
     "elo": "npm start elo all",
     "elo:single": "npm start elo single",
     "elo:compare": "npm start elo compare",
@@ -19,6 +23,7 @@
   },
   "dependencies": {
     "ajv": "^8.17.1",
+    "discord.js": "^14.21.0",
     "dotenv": "^16.0.0",
     "jsonc-parser": "^3.3.1",
     "mongodb": "^6.3.0",
