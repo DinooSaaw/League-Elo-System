@@ -21,7 +21,7 @@ export default {
         )
         .addIntegerOption(option =>
           option.setName('numgames')
-            .setDescription('Number of games to fetch (default: 3)')
+            .setDescription('Number of games to fetch (default: 1)')
             .setRequired(false)
         )
     )
@@ -36,7 +36,7 @@ export default {
         )
         .addIntegerOption(option =>
           option.setName('numgames')
-            .setDescription('Number of games to fetch (default: 3)')
+            .setDescription('Number of games to fetch (default: 1)')
             .setRequired(false)
         )
     ),
@@ -45,7 +45,7 @@ export default {
     await interaction.deferReply();
 
     const subcommand = interaction.options.getSubcommand();
-    const numGames = interaction.options.getInteger('numgames') || 3;
+    const numGames = interaction.options.getInteger('numgames') || 1;
 
     try {
       let results;
