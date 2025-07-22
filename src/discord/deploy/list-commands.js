@@ -14,7 +14,7 @@ async function listCommands() {
       Routes.applicationCommands(process.env.DISCORD_CLIENT_ID)
     );
 
-    console.log('\\n📋 Global Commands:');
+    console.log('\n📋 Global Commands:');
     console.log('===================');
     
     if (globalCommands.length === 0) {
