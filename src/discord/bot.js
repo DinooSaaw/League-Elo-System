@@ -22,7 +22,7 @@ class DiscordBot {
   setupGracefulShutdown() {
     // Graceful shutdown
     const shutdown = async () => {
-      console.log('\\n📴 Shutting down Discord bot...');
+      console.log('\n📴 Shutting down Discord bot...');
       try {
         await database.disconnect();
         this.client.destroy();
