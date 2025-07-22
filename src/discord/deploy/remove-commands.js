@@ -25,7 +25,7 @@ async function removeCommands() {
     });
 
     // Confirm removal (in a real script, you might want to add a prompt)
-    console.log('\\n🗑️ Removing all commands...');
+    console.log('\n🗑️ Removing all commands...');
 
     // Remove all commands by setting an empty array
     const data = await rest.put(
