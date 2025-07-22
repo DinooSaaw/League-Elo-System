@@ -55,7 +55,7 @@ export default {
         const change = game.change;
         const changeText = change > 0 ? `+${change}` : `${change}`;
         const emoji = change > 0 ? '📈' : change < 0 ? '📉' : '➡️';
-        historyText += `${emoji} \`${game.oldElo} → ${game.newElo}\` (${changeText})\\n`;
+        historyText += `${emoji} \`${game.oldElo} → ${game.newElo}\` (${changeText})\n`;
       });
 
       embed.addFields({ name: '📈 Recent ELO History', value: historyText, inline: false });
