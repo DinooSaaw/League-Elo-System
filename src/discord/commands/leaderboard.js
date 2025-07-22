@@ -107,8 +107,8 @@ export default {
       const mainValue = valueFormatter(player);
       const winRate = player.games > 0 ? ((player.totalWins / player.games) * 100).toFixed(1) : '0.0';
       
-      leaderboardText += `${medal} **${player.name}**\\n`;
-      leaderboardText += `    ${mainValue} | Games: \`${player.games}\` | Win Rate: \`${winRate}%\`\\n\\n`;
+      leaderboardText += `${medal} **${player.name}**\n`;
+      leaderboardText += `    ${mainValue} | Games: \`${player.games}\` | Win Rate: \`${winRate}%\`\n\n`;
     });
 
     embed.addFields({ name: 'Rankings', value: leaderboardText, inline: false });
