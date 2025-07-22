@@ -1,3 +1,4 @@
+import { ActivityType } from 'discord.js';
 import database from '../../database/mongodb.js';
 
 export default {
