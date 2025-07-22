@@ -76,7 +76,7 @@ export default {
       if (results.length > 0) {
         let matchList = '';
         results.forEach((result, index) => {
-          matchList += `${index + 1}. Game ${result.gameId} - \`${result.filename}\`\\n`;
+          matchList += `${index + 1}. Game ${result.gameId} - \`${result.filename}\`\n`;
         });
         embed.addFields({ name: '📁 Saved Files', value: matchList, inline: false });
       }
