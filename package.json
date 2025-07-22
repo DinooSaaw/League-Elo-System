@@ -1,6 +1,6 @@
 {
   "name": "league-elo-system",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -18,8 +18,7 @@
     "migrate": "npm start migrate all",
     "db:stats": "npm start db stats",
     "db:connect": "npm start db connect",
-    "help": "npm start help",
-    "test": "npm start elo single 670885753"
+    "help": "npm start help"
   },
   "dependencies": {
     "ajv": "^8.17.1",

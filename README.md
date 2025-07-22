@@ -1,4 +1,4 @@
-# League ELO System v2.1
+# League ELO System v2.2
 
 A comprehensive, clean, and organized ELO rating system for League of Legends matches with MongoDB integration and a fully modular Discord bot.
 
@@ -72,15 +72,51 @@ League Elo System/
 
 ### Available Discord Commands
 
-- **`/leaderboard [mingames]`** - Display ELO leaderboard with customizable filters
+- **`/leaderboard [type] [mingames]`** - Display multiple leaderboard types (ELO, Games, Win Rate, KDA)
 - **`/player <name>`** - Show detailed player statistics and ELO history
 - **`/elo all`** - Process all available games and calculate ELO
-- **`/elo single <gameid>`** - Process a specific game by ID
-- **`/elo compare <gameid>`** - Compare different ELO calculation methods
+- **`/elo single <gameid>`** - Process a specific game by ID with detailed ELO changes
+- **`/elo compare <gameid>`** - Compare different ELO calculation methods side-by-side
 - **`/fetch riotid <gamename> <tagline> [numgames]`** - Fetch matches by Riot ID
 - **`/fetch puuid <puuid> [numgames]`** - Fetch matches by PUUID
+- **`/fetch gameid <gameid>`** - Fetch specific match by Game ID
 - **`/dbstats`** - Display database statistics and health information
 - **`/help`** - Show comprehensive command documentation
+
+## 🎮 Enhanced Discord Features
+
+### Rich ELO Processing Embeds
+
+- **`/elo single <gameid>`** - Beautiful embed showing all players' ELO changes
+  - Visual indicators (📈 gains, 📉 losses, 🏆 wins, 💀 losses)
+  - Sorted by ELO change with KDA and champion info
+  - Shows old → new ELO with change amounts
+
+- **`/elo compare <gameid>`** - Side-by-side method comparison
+  - Traditional vs Hybrid ELO calculations
+  - Shows what each method would give without saving
+  - Perfect for testing and analysis
+
+### Multiple Leaderboard Types
+
+- **`/leaderboard type:elo`** - Classic ELO rankings (default)
+- **`/leaderboard type:games`** - Most active players
+- **`/leaderboard type:winrate`** - Highest win percentages
+- **`/leaderboard type:kda`** - Best kill/death/assist ratios
+- Each type shows relevant statistics and averages
+
+### Advanced Match Fetching
+
+- **`/fetch riotid <name> <tag>`** - Fetch by Riot ID (PlayerName#TAG1)
+- **`/fetch puuid <puuid>`** - Fetch by Player UUID
+- **`/fetch gameid <gameid>`** - Fetch specific game by ID (670885753 or OC1_670885753)
+- Smart game ID handling with automatic region detection
+
+### Professional Presentation
+
+- **Custom Branding**: "Powered By The Brightest Candle" footer on all embeds
+- **Color Coding**: Green for success, purple for comparisons, orange for warnings
+- **Rich Information**: Detailed stats, timestamps, and organized layouts
 
 ### Discord Bot Management
 
@@ -96,6 +132,30 @@ npm run bot:list
 
 # Remove all commands from Discord
 npm run bot:remove
+```
+
+## 📱 Command Examples
+
+### Discord Commands
+
+```bash
+# Leaderboard variations
+/leaderboard                        # Default ELO leaderboard
+/leaderboard type:winrate mingames:5  # Win rate with 5+ games
+/leaderboard type:kda mingames:10     # KDA leaderboard
+
+# ELO processing with rich embeds
+/elo single 670885753               # Show detailed ELO changes
+/elo compare 670885753              # Compare calculation methods
+
+# Match fetching
+/fetch riotid PlayerName TAG1       # Fetch by Riot ID
+/fetch gameid 670885753             # Fetch specific game
+/fetch puuid abc123def456           # Fetch by PUUID
+
+# Player and database info
+/player PlayerName                  # Individual player stats
+/dbstats                           # Database health
 ```
 
 ## � Quick Start
@@ -167,6 +227,7 @@ npm start elo single 670885753
 
 # Fetch new matches (requires API key)
 npm start fetch riotid PlayerName TAG1
+npm start fetch gameid 670885753
 
 # View specific player stats
 npm start leaderboard player "kadeem alford"
@@ -196,6 +257,7 @@ All commands can be run with `npm start <command>` or the convenient shortcuts:
 - `npm start fetch puuid <puuid> [numGames]` - Fetch by PUUID
 - `npm start fetch riotid <gameName> <tagLine> [numGames]` - Fetch by Riot ID
 - `npm start fetch summoner <summonerName> [numGames]` - Fetch by summoner name
+- `npm start fetch gameid <gameId>` - Fetch by Game ID
 
 ### Leaderboard & Statistics
 
@@ -325,13 +387,23 @@ If you're upgrading from the legacy version:
 - Role-specific stat priorities (e.g., supports prioritize vision)
 - Relative performance ranking within lane/role
 
-## 🏆 Leaderboard Features
+## 🏆 Leaderboard System
+
+### Leaderboard Types Available
+
+- **🏆 ELO Rating** (default): Ranked by current ELO score
+- **🎮 Games Played**: Most active players
+- **📈 Win Rate**: Highest win percentage
+- **⚔️ KDA Ratio**: Best kill/death/assist ratios
+
+### Core Features
 
 - **Minimum Games Filter**: Only show players with sufficient games
-- **Multiple Categories**: ELO, Games Played, Win Rate, Average KDA
+- **Dynamic Statistics**: Type-specific stats (highest/lowest values, averages)
 - **Player Statistics**: Detailed individual player performance
 - **ELO History**: Track ELO changes over time
 - **Performance Trends**: Analyze performance patterns
+- **Custom Branding**: Rich Discord embeds with consistent styling
 
 ## 🔧 Development
 
