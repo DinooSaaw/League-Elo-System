@@ -56,7 +56,6 @@ League Elo System/
 ├── package.json                  # Dependencies and convenient scripts
 ├── elo-config.jsonc             # ELO calculation configuration
 ├── .env.example                 # Environment variables template
-├── DISCORD_BOT_ARCHITECTURE.md # Discord bot documentation
 └── README.md                    # This file
 ```
 
@@ -111,12 +110,6 @@ League Elo System/
 - **`/fetch puuid <puuid>`** - Fetch by Player UUID
 - **`/fetch gameid <gameid>`** - Fetch specific game by ID (670885753 or OC1_670885753)
 - Smart game ID handling with automatic region detection
-
-### Professional Presentation
-
-- **Custom Branding**: "Powered By The Brightest Candle" footer on all embeds
-- **Color Coding**: Green for success, purple for comparisons, orange for warnings
-- **Rich Information**: Detailed stats, timestamps, and organized layouts
 
 ### Discord Bot Management
 
@@ -518,23 +511,3 @@ Set `DEBUG=true` in your environment for detailed error logs:
 ```bash
 DEBUG=true npm start elo all
 ```
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📞 Support
-
-For issues and questions:
-
-- Check the troubleshooting section
-- Review the logs for error details
-- Create an issue on GitHub with detailed information
